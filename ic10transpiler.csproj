@@ -1,0 +1,8 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFrameworks>net8.0</TargetFrameworks>
+        <RootNamespace>Ic10Transpiler</RootNamespace>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+</Project>

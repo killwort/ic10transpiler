@@ -1,0 +1,103 @@
+$namespace=Ic10Transpiler.Parser
+using System.Collections;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Collections.Generic;
+using System.Globalization;
+using Ic10Transpiler.AST;
+COMPILER Ic10cProgram
+private readonly List<Statement> result = new List<Statement>();
+private List<ISymbol> symtable = new List<ISymbol>();
+private readonly List<Define> defines = new List<Define>();
+internal static Program Parse(string src){
+	var errorCollector=new ErrorCollector();
+	var p=new Parser(new Scanner(new StringBuffer(src)),errorCollector);
+	p.Parse();
+	errorCollector.ThrowErrors();
+	return new Program(p.defines, p.symtable, p.result);
+}
+
+private static string Unquote(string val){
+return UnescapeRegex.Replace(val.Substring(1, val.Length - 2), ev => ev.Value.Substring(1));
+}
+private static readonly Regex UnescapeRegex = new Regex(@"\\.", RegexOptions.Compiled);
+
+CHARACTERS
+letter		=	'A'..'Z'+'a'..'z'+'_'+'$'.
+digit		=	'0'..'9'.
+esc			=	"\\".
+stringDelim	=	"\"".
+stringDelimBq	=	"'".
+stringChar	=	ANY-stringDelim-stringDelimBq-esc.
+TOKENS
+ident		=	(letter){letter|digit}.
+number		=	({digit}"."digit {digit})|(digit {digit}).
+string		=	stringDelim {stringChar|esc"\""|esc"'"|esc esc} stringDelim.
+stringBq		=	stringDelimBq {stringChar|esc"\""|esc"'"|esc esc} stringDelimBq.
+internalMultiplicativeOp  = "*" | "/" | "%".
+internalAdditiveOp    = "-" | "+".
+compoundAssignmentOp  = "+=" | "-=" | "*=" | "/=" | "%=".
+logicalOp = "<=" | ">=" | "<" | ">" | "==" | "!=". 
+logicalBinaryOp = "&&" | "||".
+IGNORE 
+'\r' + '\n' + '\t' + ' '
+PRODUCTIONS
+VariableDeclaration <out ArrayList declarations, out ArrayList initializations> = (. declarations = new ArrayList(); initializations = new ArrayList(); .)
+    "var" OneVariableDeclaration<initializations, out var d> (. declarations.Add(d); .) {","  OneVariableDeclaration<initializations, out d> (. declarations.Add(d); .) } ";".
+OneVariableDeclaration <ArrayList initializations, out VarDeclaration vd>     = 
+                                                ident (. vd = new VarDeclaration(t, t.val); .) ["=" Expression<out var initVal> (. initializations.Add(new Assignment(t, vd.Name, initVal)); .) ]
+                                                .
+Const   <out string literal>  (. literal = null; .) =  
+                                  number (. literal = t.val; .)
+                                | stringBq  (. literal = "HASH(\"" + Unquote(t.val) + "\")"; .)
+                                | string  (. literal = Unquote(t.val); .)
+                                .
+Definition  <out Define declaration>  = "define" ident (. declaration = new Define(t, t.val); .) "=" Const<out var c> (. declaration.Value = c; .).
+Expression  <out Expr expr>  = AdditiveExpression<out expr>.
+AdditiveExpression<out Expr expr> = MultiplicativeExpression<out var first> (. expr = first; .) { internalAdditiveOp (. var op = t.val; .) MultiplicativeExpression<out var next> (. expr = new BinaryExpression(t, expr, op, next); .) }.
+MultiplicativeExpression<out Expr expr> = OperandExpression<out var first> (. expr = first; .) { internalMultiplicativeOp (. var op = t.val; .) OperandExpression<out var next> (. expr = new BinaryExpression(t, expr, op, next); .) }.
+OperandExpression<out Expr expr>  (. expr = null; .) = "(" AdditiveExpression<out expr> ")"
+                    | Const<out var c> (. expr = new ConstValue(t, c); .)
+                    | ident (. var id = t.val; .) (
+                        (. var args = new List<Expr>(); .)
+                        "(" [Expression<out var firstArg> (. args.Add(firstArg); .) {"," Expression<out var nextArg> (. args.Add(nextArg); .)}] ")"  (. expr = new FunctionCall(t, id, args); .)
+                        | (. expr = new SymbolRef(t, id); .)
+                        )
+                    .
+
+FunctionDeclaration<out FunctionDeclaration fn>    = "function" ident (. fn = new FunctionDeclaration(t, t.val); var oldSt = symtable; symtable = fn.Symtable; .) "(" [ident (. fn.Symtable.Add(new Argument(t, t.val)); .) {","  ident (. fn.Symtable.Add(new Argument(t, t.val)); .) }]")" "{" StatementList<out var ss> (. fn.Body.AddRange(ss.Cast<Statement>()); symtable = oldSt; .) "}".
+TopLevelStatement<out Statement statement>  (. statement = null; .) = FunctionDeclaration<out var fn> (. statement = fn; .)
+            | Definition<out var declaration> (. defines.Add(declaration); .) ";"
+            | Statement<out statement>
+            .
+LogicalExpression<out LogicalExpression expr> (. expr = null; .) =
+            LogicalComparison<out var c> (. expr = c; .) { logicalBinaryOp (. var op = t.val; .) LogicalComparison<out c> (. expr = new LogicalJunction(t, expr, op, c); .) }
+            | "true" (. expr = new LogicalConstant(t, true); .)
+            | "false" (. expr = new LogicalConstant(t, false); .)
+            .            
+LogicalComparison<out LogicalExpression expr> (. expr = null; .) =
+            Expression<out var lhs> logicalOp (. var op = t.val; .) Expression<out var rhs> (. expr = new LogicalComparison(t, lhs, op, rhs); .) 
+            | "(" LogicalExpression<out expr> ")"
+            .           
+Statement<out Statement statement>  (. statement = null; .) = (
+                ident (. var id = t.val; .) (
+                    "=" Expression<out var rhs> (. statement = new Assignment(t, id, rhs); .)
+                    | compoundAssignmentOp (. var op = t.val.Substring(0,1); .) Expression<out var rhs> (. statement = new Assignment(t, id, new BinaryExpression(t, new SymbolRef(t, id), op, rhs)); .)
+                    | "++" (. statement = new Assignment(t, id, new BinaryExpression(t, new SymbolRef(t, id), "+", new ConstValue(t,"1"))); .)
+                    | "--" (. statement = new Assignment(t, id, new BinaryExpression(t, new SymbolRef(t, id), "-", new ConstValue(t,"1"))); .)
+                    | (. var args = new List<Expr>(); .) "(" [Expression<out var firstArg> (. args.Add(firstArg); .) {"," Expression<out var nextArg> (. args.Add(nextArg); .)}] ")" (. statement = new FunctionCall(t, id, args, true); .)
+                )
+                ";"
+            )
+            | "while" "(" LogicalExpression<out var cond> ")" Statement<out var body> (. statement = new LoopStatement(t, body){ Precondition = cond }; .)
+            | "do" Statement<out var body> "while" "(" LogicalExpression<out var cond> ")" (. statement = new LoopStatement(t, body){ Postcondition = cond }; .)
+            | "break" (. statement = new BreakStatement(t); .) ";"
+            | "if" "(" LogicalExpression<out var cond> ")" Statement<out var trueBody> (. statement = new Conditional(t, cond, trueBody); .) ["else" Statement<out var falseBody> (. ((Conditional)statement).False = falseBody; .) ]
+            | "{" [ StatementList<out var ss> (. statement = new Block(t, ss.Cast<Statement>()); .) ] "}"
+            | "return" Expression<out var rv> (. statement = new Return(t, rv); .) ";"      
+            | VariableDeclaration<out var declarations, out var initializations> (. symtable.AddRange(declarations.Cast<VarDeclaration>()); statement = new Block(t, initializations.Cast<Assignment>()); .)
+            | ";"            
+            .
+StatementList<out ArrayList statements> (. statements = new ArrayList(); .) = Statement<out var s> (. if(s!=null)statements.Add(s); .) { Statement<out s> (. if(s!=null)statements.Add(s); .) }.
+Ic10cProgram = TopLevelStatement<out var s> (. if(s!=null)result.Add(s); .){ TopLevelStatement<out s> (. if(s!=null)result.Add(s); .) }.
+END Ic10cProgram.

@@ -1,0 +1,20 @@
+﻿define minTemp = 20;
+define maxTemp = 30;
+define sensor = 'StructureGasSensor';
+
+var temperature=300, isHeating = 0;
+var ang=.333;
+var v=min(sin(ang), cos(ang));
+
+while(true){
+    temperature += isHeating - 0.5;
+    isHeating = hysteresis(minTemp, temperature, maxTemp, isHeating);
+}
+
+function hysteresis(min, current, max, increasing){    
+    if(current - 273 < min)
+        return 1;
+    else if(current - 273 > max)
+        return 0;
+    return increasing;
+}
