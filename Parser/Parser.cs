@@ -23,11 +23,12 @@ internal class Parser {
 	public const int _string = 3;
 	public const int _stringBq = 4;
 	public const int _internalMultiplicativeOp = 5;
-	public const int _internalAdditiveOp = 6;
-	public const int _compoundAssignmentOp = 7;
-	public const int _logicalOp = 8;
-	public const int _logicalBinaryOp = 9;
-	public const int maxT = 30;
+	public const int _unaryMinus = 6;
+	public const int _internalAdditiveOp = 7;
+	public const int _compoundAssignmentOp = 8;
+	public const int _logicalOp = 9;
+	public const int _logicalBinaryOp = 10;
+	public const int maxT = 31;
 
 	const bool _T = true;
 	const bool _x = false;
@@ -117,21 +118,21 @@ private static readonly Regex UnescapeRegex = new Regex(@"\\.", RegexOptions.Com
 	
 	void VariableDeclaration(out ArrayList declarations, out ArrayList initializations) {
 		declarations = new ArrayList(); initializations = new ArrayList(); 
-		Expect(10);
+		Expect(11);
 		OneVariableDeclaration(initializations, out var d);
 		declarations.Add(d); 
-		while (la.kind == 11) {
+		while (la.kind == 12) {
 			Get();
 			OneVariableDeclaration(initializations, out d);
 			declarations.Add(d); 
 		}
-		Expect(12);
+		Expect(13);
 	}
 
 	void OneVariableDeclaration(ArrayList initializations, out VarDeclaration vd) {
 		Expect(1);
 		vd = new VarDeclaration(t, t.val); 
-		if (la.kind == 13) {
+		if (la.kind == 14) {
 			Get();
 			Expression(out var initVal);
 			initializations.Add(new Assignment(t, vd.Name, initVal)); 
@@ -147,20 +148,24 @@ private static readonly Regex UnescapeRegex = new Regex(@"\\.", RegexOptions.Com
 		if (la.kind == 2) {
 			Get();
 			literal = t.val; 
+		} else if (la.kind == 6) {
+			Get();
+			Expect(2);
+			literal = "-" + t.val; 
 		} else if (la.kind == 4) {
 			Get();
 			literal = "HASH(\"" + Unquote(t.val) + "\")"; 
 		} else if (la.kind == 3) {
 			Get();
 			literal = Unquote(t.val); 
-		} else SynErr(31);
+		} else SynErr(32);
 	}
 
 	void Definition(out Define declaration) {
-		Expect(14);
+		Expect(15);
 		Expect(1);
 		declaration = new Define(t, t.val); 
-		Expect(13);
+		Expect(14);
 		Const(out var c);
 		declaration.Value = c; 
 	}
@@ -168,8 +173,12 @@ private static readonly Regex UnescapeRegex = new Regex(@"\\.", RegexOptions.Com
 	void AdditiveExpression(out Expr expr) {
 		MultiplicativeExpression(out var first);
 		expr = first; 
-		while (la.kind == 6) {
-			Get();
+		while (la.kind == 6 || la.kind == 7) {
+			if (la.kind == 7) {
+				Get();
+			} else {
+				Get();
+			}
 			var op = t.val; 
 			MultiplicativeExpression(out var next);
 			expr = new BinaryExpression(t, expr, op, next); 
@@ -189,62 +198,62 @@ private static readonly Regex UnescapeRegex = new Regex(@"\\.", RegexOptions.Com
 
 	void OperandExpression(out Expr expr) {
 		expr = null; 
-		if (la.kind == 15) {
+		if (la.kind == 16) {
 			Get();
 			AdditiveExpression(out expr);
-			Expect(16);
-		} else if (la.kind == 2 || la.kind == 3 || la.kind == 4) {
+			Expect(17);
+		} else if (StartOf(1)) {
 			Const(out var c);
 			expr = new ConstValue(t, c); 
 		} else if (la.kind == 1) {
 			Get();
 			var id = t.val; 
-			if (la.kind == 15) {
+			if (la.kind == 16) {
 				var args = new List<Expr>(); 
 				Get();
-				if (StartOf(1)) {
+				if (StartOf(2)) {
 					Expression(out var firstArg);
 					args.Add(firstArg); 
-					while (la.kind == 11) {
+					while (la.kind == 12) {
 						Get();
 						Expression(out var nextArg);
 						args.Add(nextArg); 
 					}
 				}
-				Expect(16);
+				Expect(17);
 				expr = new FunctionCall(t, id, args); 
-			} else if (StartOf(2)) {
+			} else if (StartOf(3)) {
 				expr = new SymbolRef(t, id); 
-			} else SynErr(32);
-		} else SynErr(33);
+			} else SynErr(33);
+		} else SynErr(34);
 	}
 
 	void FunctionDeclaration(out FunctionDeclaration fn) {
-		Expect(17);
+		Expect(18);
 		Expect(1);
 		fn = new FunctionDeclaration(t, t.val); var oldSt = symtable; symtable = fn.Symtable; 
-		Expect(15);
+		Expect(16);
 		if (la.kind == 1) {
 			Get();
 			fn.Symtable.Add(new Argument(t, t.val)); 
-			while (la.kind == 11) {
+			while (la.kind == 12) {
 				Get();
 				Expect(1);
 				fn.Symtable.Add(new Argument(t, t.val)); 
 			}
 		}
-		Expect(16);
-		Expect(18);
+		Expect(17);
+		Expect(19);
 		StatementList(out var ss);
 		fn.Body.AddRange(ss.Cast<Statement>()); symtable = oldSt; 
-		Expect(19);
+		Expect(20);
 	}
 
 	void StatementList(out ArrayList statements) {
 		statements = new ArrayList(); 
 		Statement(out var s);
 		if(s!=null)statements.Add(s); 
-		while (StartOf(3)) {
+		while (StartOf(4)) {
 			Statement(out s);
 			if(s!=null)statements.Add(s); 
 		}
@@ -252,16 +261,16 @@ private static readonly Regex UnescapeRegex = new Regex(@"\\.", RegexOptions.Com
 
 	void TopLevelStatement(out Statement statement) {
 		statement = null; 
-		if (la.kind == 17) {
+		if (la.kind == 18) {
 			FunctionDeclaration(out var fn);
 			statement = fn; 
-		} else if (la.kind == 14) {
+		} else if (la.kind == 15) {
 			Definition(out var declaration);
 			defines.Add(declaration); 
-			Expect(12);
-		} else if (StartOf(3)) {
+			Expect(13);
+		} else if (StartOf(4)) {
 			Statement(out statement);
-		} else SynErr(34);
+		} else SynErr(35);
 	}
 
 	void Statement(out Statement statement) {
@@ -270,146 +279,146 @@ private static readonly Regex UnescapeRegex = new Regex(@"\\.", RegexOptions.Com
 		case 1: {
 			Get();
 			var id = t.val; 
-			if (la.kind == 13) {
+			if (la.kind == 14) {
 				Get();
 				Expression(out var rhs);
 				statement = new Assignment(t, id, rhs); 
-			} else if (la.kind == 7) {
+			} else if (la.kind == 8) {
 				Get();
 				var op = t.val.Substring(0,1); 
 				Expression(out var rhs);
 				statement = new Assignment(t, id, new BinaryExpression(t, new SymbolRef(t, id), op, rhs)); 
-			} else if (la.kind == 22) {
-				Get();
-				statement = new Assignment(t, id, new BinaryExpression(t, new SymbolRef(t, id), "+", new ConstValue(t,"1"))); 
 			} else if (la.kind == 23) {
 				Get();
+				statement = new Assignment(t, id, new BinaryExpression(t, new SymbolRef(t, id), "+", new ConstValue(t,"1"))); 
+			} else if (la.kind == 24) {
+				Get();
 				statement = new Assignment(t, id, new BinaryExpression(t, new SymbolRef(t, id), "-", new ConstValue(t,"1"))); 
-			} else if (la.kind == 15) {
+			} else if (la.kind == 16) {
 				var args = new List<Expr>(); 
 				Get();
-				if (StartOf(1)) {
+				if (StartOf(2)) {
 					Expression(out var firstArg);
 					args.Add(firstArg); 
-					while (la.kind == 11) {
+					while (la.kind == 12) {
 						Get();
 						Expression(out var nextArg);
 						args.Add(nextArg); 
 					}
 				}
-				Expect(16);
+				Expect(17);
 				statement = new FunctionCall(t, id, args, true); 
-			} else SynErr(35);
-			Expect(12);
-			break;
-		}
-		case 24: {
-			Get();
-			Expect(15);
-			LogicalExpression(out var cond);
-			Expect(16);
-			Statement(out var body);
-			statement = new LoopStatement(t, body){ Precondition = cond }; 
+			} else SynErr(36);
+			Expect(13);
 			break;
 		}
 		case 25: {
 			Get();
-			Statement(out var body);
-			Expect(24);
-			Expect(15);
-			LogicalExpression(out var cond);
 			Expect(16);
-			statement = new LoopStatement(t, body){ Postcondition = cond }; 
+			LogicalExpression(out var cond);
+			Expect(17);
+			Statement(out var body);
+			statement = new LoopStatement(t, body){ Precondition = cond }; 
 			break;
 		}
 		case 26: {
 			Get();
-			statement = new BreakStatement(t); 
-			Expect(12);
+			Statement(out var body);
+			Expect(25);
+			Expect(16);
+			LogicalExpression(out var cond);
+			Expect(17);
+			statement = new LoopStatement(t, body){ Postcondition = cond }; 
 			break;
 		}
 		case 27: {
 			Get();
-			Expect(15);
-			LogicalExpression(out var cond);
+			statement = new BreakStatement(t); 
+			Expect(13);
+			break;
+		}
+		case 28: {
+			Get();
 			Expect(16);
+			LogicalExpression(out var cond);
+			Expect(17);
 			Statement(out var trueBody);
 			statement = new Conditional(t, cond, trueBody); 
-			if (la.kind == 28) {
+			if (la.kind == 29) {
 				Get();
 				Statement(out var falseBody);
 				((Conditional)statement).False = falseBody; 
 			}
 			break;
 		}
-		case 18: {
+		case 19: {
 			Get();
-			if (StartOf(3)) {
+			if (StartOf(4)) {
 				StatementList(out var ss);
 				statement = new Block(t, ss.Cast<Statement>()); 
 			}
-			Expect(19);
+			Expect(20);
 			break;
 		}
-		case 29: {
+		case 30: {
 			Get();
 			Expression(out var rv);
 			statement = new Return(t, rv); 
-			Expect(12);
+			Expect(13);
 			break;
 		}
-		case 10: {
+		case 11: {
 			VariableDeclaration(out var declarations, out var initializations);
 			symtable.AddRange(declarations.Cast<VarDeclaration>()); statement = new Block(t, initializations.Cast<Assignment>()); 
 			break;
 		}
-		case 12: {
+		case 13: {
 			Get();
 			break;
 		}
-		default: SynErr(36); break;
+		default: SynErr(37); break;
 		}
 	}
 
 	void LogicalExpression(out LogicalExpression expr) {
 		expr = null; 
-		if (StartOf(1)) {
+		if (StartOf(2)) {
 			LogicalComparison(out var c);
 			expr = c; 
-			while (la.kind == 9) {
+			while (la.kind == 10) {
 				Get();
 				var op = t.val; 
 				LogicalComparison(out c);
 				expr = new LogicalJunction(t, expr, op, c); 
 			}
-		} else if (la.kind == 20) {
-			Get();
-			expr = new LogicalConstant(t, true); 
 		} else if (la.kind == 21) {
 			Get();
+			expr = new LogicalConstant(t, true); 
+		} else if (la.kind == 22) {
+			Get();
 			expr = new LogicalConstant(t, false); 
-		} else SynErr(37);
+		} else SynErr(38);
 	}
 
 	void LogicalComparison(out LogicalExpression expr) {
 		expr = null; 
-		if (StartOf(1)) {
+		if (la.kind == 16) {
+			Get();
+			LogicalExpression(out expr);
+			Expect(17);
+		} else if (StartOf(2)) {
 			Expression(out var lhs);
-			Expect(8);
+			Expect(9);
 			var op = t.val; 
 			Expression(out var rhs);
 			expr = new LogicalComparison(t, lhs, op, rhs); 
-		} else if (la.kind == 15) {
-			Get();
-			LogicalExpression(out expr);
-			Expect(16);
-		} else SynErr(38);
+		} else SynErr(39);
 	}
 
 	void Ic10cProgram() {
 		TopLevelStatement(out var s);
 		if(s!=null)result.Add(s); 
-		while (StartOf(4)) {
+		while (StartOf(5)) {
 			TopLevelStatement(out s);
 			if(s!=null)result.Add(s); 
 		}
@@ -427,11 +436,12 @@ private static readonly Regex UnescapeRegex = new Regex(@"\\.", RegexOptions.Com
 	}
 	
 	static readonly bool[,] set = {
-		{_T,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x},
-		{_x,_T,_T,_T, _T,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_T, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x},
-		{_x,_x,_x,_x, _x,_T,_T,_x, _T,_T,_x,_T, _T,_x,_x,_x, _T,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x},
-		{_x,_T,_x,_x, _x,_x,_x,_x, _x,_x,_T,_x, _T,_x,_x,_x, _x,_x,_T,_x, _x,_x,_x,_x, _T,_T,_T,_T, _x,_T,_x,_x},
-		{_x,_T,_x,_x, _x,_x,_x,_x, _x,_x,_T,_x, _T,_x,_T,_x, _x,_T,_T,_x, _x,_x,_x,_x, _T,_T,_T,_T, _x,_T,_x,_x}
+		{_T,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x},
+		{_x,_x,_T,_T, _T,_x,_T,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x},
+		{_x,_T,_T,_T, _T,_x,_T,_x, _x,_x,_x,_x, _x,_x,_x,_x, _T,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x},
+		{_x,_x,_x,_x, _x,_T,_T,_T, _x,_T,_T,_x, _T,_T,_x,_x, _x,_T,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x,_x,_x,_x, _x},
+		{_x,_T,_x,_x, _x,_x,_x,_x, _x,_x,_x,_T, _x,_T,_x,_x, _x,_x,_x,_T, _x,_x,_x,_x, _x,_T,_T,_T, _T,_x,_T,_x, _x},
+		{_x,_T,_x,_x, _x,_x,_x,_x, _x,_x,_x,_T, _x,_T,_x,_T, _x,_x,_T,_T, _x,_x,_x,_x, _x,_T,_T,_T, _T,_x,_T,_x, _x}
 
 	};
 } // end Parser
@@ -473,39 +483,40 @@ internal class ErrorCollector : IErrors, IEnumerable<Error>
 			case 3: s = "string expected"; break;
 			case 4: s = "stringBq expected"; break;
 			case 5: s = "internalMultiplicativeOp expected"; break;
-			case 6: s = "internalAdditiveOp expected"; break;
-			case 7: s = "compoundAssignmentOp expected"; break;
-			case 8: s = "logicalOp expected"; break;
-			case 9: s = "logicalBinaryOp expected"; break;
-			case 10: s = "\"var\" expected"; break;
-			case 11: s = "\",\" expected"; break;
-			case 12: s = "\";\" expected"; break;
-			case 13: s = "\"=\" expected"; break;
-			case 14: s = "\"define\" expected"; break;
-			case 15: s = "\"(\" expected"; break;
-			case 16: s = "\")\" expected"; break;
-			case 17: s = "\"function\" expected"; break;
-			case 18: s = "\"{\" expected"; break;
-			case 19: s = "\"}\" expected"; break;
-			case 20: s = "\"true\" expected"; break;
-			case 21: s = "\"false\" expected"; break;
-			case 22: s = "\"++\" expected"; break;
-			case 23: s = "\"--\" expected"; break;
-			case 24: s = "\"while\" expected"; break;
-			case 25: s = "\"do\" expected"; break;
-			case 26: s = "\"break\" expected"; break;
-			case 27: s = "\"if\" expected"; break;
-			case 28: s = "\"else\" expected"; break;
-			case 29: s = "\"return\" expected"; break;
-			case 30: s = "??? expected"; break;
-			case 31: s = "invalid Const"; break;
-			case 32: s = "invalid OperandExpression"; break;
+			case 6: s = "unaryMinus expected"; break;
+			case 7: s = "internalAdditiveOp expected"; break;
+			case 8: s = "compoundAssignmentOp expected"; break;
+			case 9: s = "logicalOp expected"; break;
+			case 10: s = "logicalBinaryOp expected"; break;
+			case 11: s = "\"var\" expected"; break;
+			case 12: s = "\",\" expected"; break;
+			case 13: s = "\";\" expected"; break;
+			case 14: s = "\"=\" expected"; break;
+			case 15: s = "\"define\" expected"; break;
+			case 16: s = "\"(\" expected"; break;
+			case 17: s = "\")\" expected"; break;
+			case 18: s = "\"function\" expected"; break;
+			case 19: s = "\"{\" expected"; break;
+			case 20: s = "\"}\" expected"; break;
+			case 21: s = "\"true\" expected"; break;
+			case 22: s = "\"false\" expected"; break;
+			case 23: s = "\"++\" expected"; break;
+			case 24: s = "\"--\" expected"; break;
+			case 25: s = "\"while\" expected"; break;
+			case 26: s = "\"do\" expected"; break;
+			case 27: s = "\"break\" expected"; break;
+			case 28: s = "\"if\" expected"; break;
+			case 29: s = "\"else\" expected"; break;
+			case 30: s = "\"return\" expected"; break;
+			case 31: s = "??? expected"; break;
+			case 32: s = "invalid Const"; break;
 			case 33: s = "invalid OperandExpression"; break;
-			case 34: s = "invalid TopLevelStatement"; break;
-			case 35: s = "invalid Statement"; break;
+			case 34: s = "invalid OperandExpression"; break;
+			case 35: s = "invalid TopLevelStatement"; break;
 			case 36: s = "invalid Statement"; break;
-			case 37: s = "invalid LogicalExpression"; break;
-			case 38: s = "invalid LogicalComparison"; break;
+			case 37: s = "invalid Statement"; break;
+			case 38: s = "invalid LogicalExpression"; break;
+			case 39: s = "invalid LogicalComparison"; break;
 
 			default: s = "error " + n; break;
 		}

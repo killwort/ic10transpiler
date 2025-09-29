@@ -29,13 +29,15 @@ esc			=	"\\".
 stringDelim	=	"\"".
 stringDelimBq	=	"'".
 stringChar	=	ANY-stringDelim-stringDelimBq-esc.
+minus = "-".
 TOKENS
 ident		=	(letter){letter|digit}.
 number		=	({digit}"."digit {digit})|(digit {digit}).
 string		=	stringDelim {stringChar|esc"\""|esc"'"|esc esc} stringDelim.
 stringBq		=	stringDelimBq {stringChar|esc"\""|esc"'"|esc esc} stringDelimBq.
 internalMultiplicativeOp  = "*" | "/" | "%".
-internalAdditiveOp    = "-" | "+".
+unaryMinus = minus.
+internalAdditiveOp    = "+".
 compoundAssignmentOp  = "+=" | "-=" | "*=" | "/=" | "%=".
 logicalOp = "<=" | ">=" | "<" | ">" | "==" | "!=". 
 logicalBinaryOp = "&&" | "||".
@@ -49,12 +51,13 @@ OneVariableDeclaration <ArrayList initializations, out VarDeclaration vd>     =
                                                 .
 Const   <out string literal>  (. literal = null; .) =  
                                   number (. literal = t.val; .)
+                                | unaryMinus number (. literal = "-" + t.val; .)
                                 | stringBq  (. literal = "HASH(\"" + Unquote(t.val) + "\")"; .)
                                 | string  (. literal = Unquote(t.val); .)
                                 .
 Definition  <out Define declaration>  = "define" ident (. declaration = new Define(t, t.val); .) "=" Const<out var c> (. declaration.Value = c; .).
 Expression  <out Expr expr>  = AdditiveExpression<out expr>.
-AdditiveExpression<out Expr expr> = MultiplicativeExpression<out var first> (. expr = first; .) { internalAdditiveOp (. var op = t.val; .) MultiplicativeExpression<out var next> (. expr = new BinaryExpression(t, expr, op, next); .) }.
+AdditiveExpression<out Expr expr> = MultiplicativeExpression<out var first> (. expr = first; .) { (internalAdditiveOp | unaryMinus) (. var op = t.val; .) MultiplicativeExpression<out var next> (. expr = new BinaryExpression(t, expr, op, next); .) }.
 MultiplicativeExpression<out Expr expr> = OperandExpression<out var first> (. expr = first; .) { internalMultiplicativeOp (. var op = t.val; .) OperandExpression<out var next> (. expr = new BinaryExpression(t, expr, op, next); .) }.
 OperandExpression<out Expr expr>  (. expr = null; .) = "(" AdditiveExpression<out expr> ")"
                     | Const<out var c> (. expr = new ConstValue(t, c); .)
@@ -76,8 +79,8 @@ LogicalExpression<out LogicalExpression expr> (. expr = null; .) =
             | "false" (. expr = new LogicalConstant(t, false); .)
             .            
 LogicalComparison<out LogicalExpression expr> (. expr = null; .) =
-            Expression<out var lhs> logicalOp (. var op = t.val; .) Expression<out var rhs> (. expr = new LogicalComparison(t, lhs, op, rhs); .) 
-            | "(" LogicalExpression<out expr> ")"
+            "(" LogicalExpression<out expr> ")"
+            | Expression<out var lhs> logicalOp (. var op = t.val; .) Expression<out var rhs> (. expr = new LogicalComparison(t, lhs, op, rhs); .) 
             .           
 Statement<out Statement statement>  (. statement = null; .) = (
                 ident (. var id = t.val; .) (

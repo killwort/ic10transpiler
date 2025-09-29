@@ -40,8 +40,8 @@ static class Buffer{
 internal class Scanner {
 	const char EOL = '\n';
 	const int eofSym = 0; /* pdt */
-	const int maxT = 30;
-	const int noSym = 30;
+	const int maxT = 31;
+	const int noSym = 31;
 
 
 	public IBuffer buffer; // scanner buffer
@@ -70,11 +70,11 @@ internal class Scanner {
 		for (int i = 48; i <= 57; ++i) start[i] = 14;
 		for (int i = 34; i <= 34; ++i) start[i] = 4;
 		for (int i = 39; i <= 39; ++i) start[i] = 6;
+		for (int i = 45; i <= 45; ++i) start[i] = 30;
 		start[46] = 2; 
 		start[42] = 15; 
 		start[47] = 16; 
 		start[37] = 17; 
-		start[45] = 30; 
 		start[43] = 31; 
 		start[60] = 18; 
 		start[62] = 19; 
@@ -135,17 +135,17 @@ internal class Scanner {
 
 	void CheckLiteral() {
 		switch (t.val) {
-			case "var": t.kind = 10; break;
-			case "define": t.kind = 14; break;
-			case "function": t.kind = 17; break;
-			case "true": t.kind = 20; break;
-			case "false": t.kind = 21; break;
-			case "while": t.kind = 24; break;
-			case "do": t.kind = 25; break;
-			case "break": t.kind = 26; break;
-			case "if": t.kind = 27; break;
-			case "else": t.kind = 28; break;
-			case "return": t.kind = 29; break;
+			case "var": t.kind = 11; break;
+			case "define": t.kind = 15; break;
+			case "function": t.kind = 18; break;
+			case "true": t.kind = 21; break;
+			case "false": t.kind = 22; break;
+			case "while": t.kind = 25; break;
+			case "do": t.kind = 26; break;
+			case "break": t.kind = 27; break;
+			case "if": t.kind = 28; break;
+			case "else": t.kind = 29; break;
+			case "return": t.kind = 30; break;
 			default: break;
 		}
 	}
@@ -199,12 +199,12 @@ internal class Scanner {
 			case 7:
 				{t.kind = 4; break;}
 			case 8:
-				{t.kind = 7; break;}
+				{t.kind = 8; break;}
 			case 9:
 				if (ch == '=') {AddCh(); goto case 10;}
 				else {goto case 0;}
 			case 10:
-				{t.kind = 8; break;}
+				{t.kind = 9; break;}
 			case 11:
 				if (ch == '&') {AddCh(); goto case 13;}
 				else {goto case 0;}
@@ -212,7 +212,7 @@ internal class Scanner {
 				if (ch == '|') {AddCh(); goto case 13;}
 				else {goto case 0;}
 			case 13:
-				{t.kind = 9; break;}
+				{t.kind = 10; break;}
 			case 14:
 				recEnd = pos; recKind = 2;
 				if (ch >= '0' && ch <= '9') {AddCh(); goto case 14;}
@@ -231,13 +231,13 @@ internal class Scanner {
 				if (ch == '=') {AddCh(); goto case 8;}
 				else {t.kind = 5; break;}
 			case 18:
-				recEnd = pos; recKind = 8;
+				recEnd = pos; recKind = 9;
 				if (ch == '=') {AddCh(); goto case 10;}
-				else {t.kind = 8; break;}
+				else {t.kind = 9; break;}
 			case 19:
-				recEnd = pos; recKind = 8;
+				recEnd = pos; recKind = 9;
 				if (ch == '=') {AddCh(); goto case 10;}
-				else {t.kind = 8; break;}
+				else {t.kind = 9; break;}
 			case 20:
 				if (ch == '"' || ch == 39 || ch == 92) {AddCh(); goto case 4;}
 				else {goto case 0;}
@@ -245,35 +245,35 @@ internal class Scanner {
 				if (ch == '"' || ch == 39 || ch == 92) {AddCh(); goto case 6;}
 				else {goto case 0;}
 			case 22:
-				{t.kind = 11; break;}
-			case 23:
 				{t.kind = 12; break;}
+			case 23:
+				{t.kind = 13; break;}
 			case 24:
-				{t.kind = 15; break;}
-			case 25:
 				{t.kind = 16; break;}
+			case 25:
+				{t.kind = 17; break;}
 			case 26:
-				{t.kind = 18; break;}
-			case 27:
 				{t.kind = 19; break;}
+			case 27:
+				{t.kind = 20; break;}
 			case 28:
-				{t.kind = 22; break;}
-			case 29:
 				{t.kind = 23; break;}
+			case 29:
+				{t.kind = 24; break;}
 			case 30:
 				recEnd = pos; recKind = 6;
 				if (ch == '=') {AddCh(); goto case 8;}
 				else if (ch == '-') {AddCh(); goto case 29;}
 				else {t.kind = 6; break;}
 			case 31:
-				recEnd = pos; recKind = 6;
+				recEnd = pos; recKind = 7;
 				if (ch == '=') {AddCh(); goto case 8;}
 				else if (ch == '+') {AddCh(); goto case 28;}
-				else {t.kind = 6; break;}
+				else {t.kind = 7; break;}
 			case 32:
-				recEnd = pos; recKind = 13;
+				recEnd = pos; recKind = 14;
 				if (ch == '=') {AddCh(); goto case 10;}
-				else {t.kind = 13; break;}
+				else {t.kind = 14; break;}
 
 		}
 		t.val = new String(tval, 0, tlen);
