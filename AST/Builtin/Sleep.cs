@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Ic10Transpiler.Assembler;
 using Ic10Transpiler.Parser;
 
@@ -7,6 +8,8 @@ namespace Ic10Transpiler.AST.Builtin;
 internal class Sleep : BuiltinFunction
 {
     public override string Name => "sleep";
+
+    public override IEnumerable<Argument> Arguments => [];
 
     public override IEnumerable<Op> EmitCall(IResolutionScope scope, FunctionCall call)
     {

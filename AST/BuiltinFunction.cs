@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using Ic10Transpiler.Assembler;
 using Ic10Transpiler.Parser;
 
@@ -21,10 +23,15 @@ internal abstract class BuiltinFunction : IFunction
         return false;
     }
 
-    protected static Operand ToOperand(Expr arg)
+    protected static Operand ToOperand(Expr arg, IResolutionScope scope)
     {
         if (arg is ConstValue cv) return new ImmediateAnyOperand(cv.Value);
-        if (arg is SymbolRef sr) return new DefinitionOperand(sr.Name);
+        if (arg is SymbolRef sr)
+        {
+            var emit=arg.Emit(scope);
+            return ((Instruction)emit.First()).Operands.Last();
+            //return new DefinitionOperand(sr.Name);
+        }
         throw new InvalidOperationException();
     }
 }

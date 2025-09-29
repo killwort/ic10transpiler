@@ -10,7 +10,7 @@ internal interface IResolutionScope
     Stack<LoopStatement> LoopStack { get; }
     ISymbol LookupSymbol(SymbolRef r)
     {
-        return Symtable.FirstOrDefault(x => x.Name == r.Name);
+        return Symtable.FirstOrDefault(x => x.Name == r.Name) ?? Root.LookupSymbol(r);
     }
 
 }

@@ -12,5 +12,5 @@ internal class Instruction : Op
 
     public string OpCode;
     public Operand[] Operands;
-    public override string ToString() => $"{OpCode} {string.Join<Operand>(' ', Operands)} # {Source.Line}:{Source.Column} {Source.GetType().Name}";
+    public override string ToString() => $"{OpCode} {string.Join<Operand>(' ', Operands)}"; // # {Source.Line}:{Source.Column} {Source.GetType().Name}";
 }

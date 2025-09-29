@@ -21,11 +21,11 @@ internal class LoadSlotBatch : BuiltinFunction
     {
         Operand slotIdOperand = Acc0Operand.Instance;
         if (IsConstOrDefine(scope.Root, call.Arguments[1]))
-            slotIdOperand = ToOperand(call.Arguments[1]);
+            slotIdOperand = ToOperand(call.Arguments[1], scope);
         else
             foreach (var l in call.Arguments[1].Emit(scope))
                 yield return l;
-        yield return new Instruction(call, "lbs", Acc0Operand.Instance, ToOperand(call.Arguments[0]), slotIdOperand, ToOperand(call.Arguments[2]), ToOperand(call.Arguments[3]));
+        yield return new Instruction(call, "lbs", Acc0Operand.Instance, ToOperand(call.Arguments[0], scope), slotIdOperand, ToOperand(call.Arguments[2], scope), ToOperand(call.Arguments[3], scope));
     }
 
     public override IEnumerable<Error> ValidateCall(IResolutionScope scope, FunctionCall call)

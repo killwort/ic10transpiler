@@ -23,12 +23,12 @@ internal class SaveSlotBatch : BuiltinFunction
         yield return new Instruction(call, "push", Acc0Operand.Instance);
         Operand valueOperand = Acc0Operand.Instance;
         if (IsConstOrDefine(scope.Root, call.Arguments[3]))
-            valueOperand = ToOperand(call.Arguments[3]);
+            valueOperand = ToOperand(call.Arguments[3], scope);
         else
             foreach (var l in call.Arguments[3].Emit(scope))
                 yield return l;
         yield return new Instruction(call, "pop", Acc1Operand.Instance);
-        yield return new Instruction(call, "lbs", ToOperand(call.Arguments[0]), Acc1Operand.Instance, ToOperand(call.Arguments[2]), valueOperand);
+        yield return new Instruction(call, "lbs", ToOperand(call.Arguments[0], scope), Acc1Operand.Instance, ToOperand(call.Arguments[2], scope), valueOperand);
     }
 
     public override IEnumerable<Error> ValidateCall(IResolutionScope scope, FunctionCall call)

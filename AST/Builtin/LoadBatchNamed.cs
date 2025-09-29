@@ -19,13 +19,13 @@ internal class LoadBatchNamed : BuiltinFunction
 
     public override IEnumerable<Op> EmitCall(IResolutionScope scope, FunctionCall call)
     {
-        yield return new Instruction(call, "lbn", Acc0Operand.Instance, ToOperand(call.Arguments[0]), ToOperand(call.Arguments[1]), ToOperand(call.Arguments[2]), ToOperand(call.Arguments[3]));
+        yield return new Instruction(call, "lbn", Acc0Operand.Instance, ToOperand(call.Arguments[0], scope), ToOperand(call.Arguments[1], scope), ToOperand(call.Arguments[2], scope), ToOperand(call.Arguments[3], scope));
     }
 
     public override IEnumerable<Error> ValidateCall(IResolutionScope scope, FunctionCall call)
     {
         if (!IsConstOrDefine(scope.Root, call.Arguments[0])) yield return new Error(call.Line, call.Column, "TypeHash argument should be constant", ErrorType.Semantic);
-        if (!IsConstOrDefine(scope.Root, call.Arguments[1])) yield return new Error(call.Line, call.Column, "NameHash argument should be constant", ErrorType.Semantic);
+        //if (!IsConstOrDefine(scope.Root, call.Arguments[1])) yield return new Error(call.Line, call.Column, "NameHash argument should be constant", ErrorType.Semantic);
         if (!IsConstOrDefine(scope.Root, call.Arguments[2])) yield return new Error(call.Line, call.Column, "Variable argument should be constant", ErrorType.Semantic);
         if (!IsConstOrDefine(scope.Root, call.Arguments[3])) yield return new Error(call.Line, call.Column, "Mode argument should be constant", ErrorType.Semantic);
     }

@@ -17,7 +17,7 @@ internal class Load : BuiltinFunction
 
     public override IEnumerable<Op> EmitCall(IResolutionScope scope, FunctionCall call)
     {
-        yield return new Instruction(call, "l", Acc0Operand.Instance, ToOperand(call.Arguments[0]), ToOperand(call.Arguments[1]));
+        yield return new Instruction(call, "l", Acc0Operand.Instance, ToOperand(call.Arguments[0], scope), ToOperand(call.Arguments[1], scope));
     }
 
     public override IEnumerable<Error> ValidateCall(IResolutionScope scope, FunctionCall call)

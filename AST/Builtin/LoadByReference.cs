@@ -19,11 +19,11 @@ internal class LoadByReference : BuiltinFunction
     {
         Operand deviceIdOperand = Acc0Operand.Instance;
         if (IsConstOrDefine(scope.Root, call.Arguments[0]))
-            deviceIdOperand = ToOperand(call.Arguments[0]);
+            deviceIdOperand = ToOperand(call.Arguments[0], scope);
         else
             foreach (var l in call.Arguments[0].Emit(scope))
                 yield return l;
-        yield return new Instruction(call, "ld", Acc0Operand.Instance, deviceIdOperand, ToOperand(call.Arguments[1]));
+        yield return new Instruction(call, "ld", Acc0Operand.Instance, deviceIdOperand, ToOperand(call.Arguments[1], scope));
     }
 
     public override IEnumerable<Error> ValidateCall(IResolutionScope scope, FunctionCall call)

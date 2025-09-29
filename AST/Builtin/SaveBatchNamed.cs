@@ -21,17 +21,17 @@ internal class SaveBatchNamed : BuiltinFunction
     {
         Operand valueOperand = Acc0Operand.Instance;
         if (IsConstOrDefine(scope.Root, call.Arguments[3]))
-            valueOperand = ToOperand(call.Arguments[3]);
+            valueOperand = ToOperand(call.Arguments[3], scope);
         else
             foreach (var l in call.Arguments[3].Emit(scope))
                 yield return l;
-        yield return new Instruction(call, "sbn", ToOperand(call.Arguments[0]), ToOperand(call.Arguments[1]), ToOperand(call.Arguments[2]), valueOperand);
+        yield return new Instruction(call, "sbn", ToOperand(call.Arguments[0], scope), ToOperand(call.Arguments[1], scope), ToOperand(call.Arguments[2], scope), valueOperand);
     }
 
     public override IEnumerable<Error> ValidateCall(IResolutionScope scope, FunctionCall call)
     {
         if (!IsConstOrDefine(scope.Root, call.Arguments[0])) yield return new Error(call.Line, call.Column, "TypeHash argument should be constant", ErrorType.Semantic);
-        if (!IsConstOrDefine(scope.Root, call.Arguments[1])) yield return new Error(call.Line, call.Column, "NameHash argument should be constant", ErrorType.Semantic);
+        //if (!IsConstOrDefine(scope.Root, call.Arguments[1])) yield return new Error(call.Line, call.Column, "NameHash argument should be constant", ErrorType.Semantic);
         if (!IsConstOrDefine(scope.Root, call.Arguments[2])) yield return new Error(call.Line, call.Column, "Variable argument should be constant", ErrorType.Semantic);
     }
 }

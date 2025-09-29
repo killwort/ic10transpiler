@@ -18,7 +18,7 @@ internal class LoadBatch : BuiltinFunction
 
     public override IEnumerable<Op> EmitCall(IResolutionScope scope, FunctionCall call)
     {
-        yield return new Instruction(call, "lb", Acc0Operand.Instance, ToOperand(call.Arguments[0]), ToOperand(call.Arguments[1]), ToOperand(call.Arguments[2]));
+        yield return new Instruction(call, "lb", Acc0Operand.Instance, ToOperand(call.Arguments[0], scope), ToOperand(call.Arguments[1], scope), ToOperand(call.Arguments[2], scope));
     }
 
     public override IEnumerable<Error> ValidateCall(IResolutionScope scope, FunctionCall call)

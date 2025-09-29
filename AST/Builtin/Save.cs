@@ -20,11 +20,11 @@ internal class Save : BuiltinFunction
     {
         Operand valueOperand = Acc0Operand.Instance;
         if (IsConstOrDefine(scope.Root, call.Arguments[2]))
-            valueOperand = ToOperand(call.Arguments[2]);
+            valueOperand = ToOperand(call.Arguments[2], scope);
         else
             foreach (var l in call.Arguments[2].Emit(scope))
                 yield return l;
-        yield return new Instruction(call, "s", ToOperand(call.Arguments[0]), ToOperand(call.Arguments[1]), valueOperand);
+        yield return new Instruction(call, "s", ToOperand(call.Arguments[0], scope), ToOperand(call.Arguments[1], scope), valueOperand);
     }
 
     public override IEnumerable<Error> ValidateCall(IResolutionScope scope, FunctionCall call)

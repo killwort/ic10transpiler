@@ -29,7 +29,7 @@ internal class BasicBinary : BuiltinFunction
         yield return new Instruction(call, "push", Acc0Operand.Instance);
         Operand valueOperand = Acc0Operand.Instance;
         if (IsConstOrDefine(scope.Root, call.Arguments[0]))
-            valueOperand = ToOperand(call.Arguments[0]);
+            valueOperand = ToOperand(call.Arguments[0], scope);
         else
             foreach (var l in call.Arguments[0].Emit(scope))
                 yield return l;

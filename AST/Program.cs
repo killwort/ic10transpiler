@@ -68,7 +68,10 @@ internal class Program : IResolutionScope
         var errors = new List<Error>();
         LoopStack = new Stack<LoopStatement>();
         foreach (var s in Body)
-            errors.AddRange(s.Validate(this));
+        {
+            if (s is FunctionDeclaration) continue;
+            errors.AddRange(s.Validate(this).ToArray());
+        }
 
         foreach (var fn in Symtable.OfType<FunctionDeclaration>())
         {
