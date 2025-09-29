@@ -24,7 +24,7 @@ internal class Save : BuiltinFunction
         else
             foreach (var l in call.Arguments[2].Emit(scope))
                 yield return l;
-        yield return new Instruction(call, "s", ToOperand(call.Arguments[0]), valueOperand);
+        yield return new Instruction(call, "s", ToOperand(call.Arguments[0]), ToOperand(call.Arguments[1]), valueOperand);
     }
 
     public override IEnumerable<Error> ValidateCall(IResolutionScope scope, FunctionCall call)

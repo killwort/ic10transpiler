@@ -15,6 +15,7 @@ internal class Program : IResolutionScope
     {
         Defines = defines;
         Symtable = symtable;
+        Symtable.Add(new Sleep());
         Symtable.Add(new Load());
         Symtable.Add(new LoadByReference());
         Symtable.Add(new LoadBatch());
