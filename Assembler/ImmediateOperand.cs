@@ -11,4 +11,9 @@ internal class ImmediateOperand : Operand
 
     public float Value;
     public override string ToString() => Value.ToString(CultureInfo.InvariantCulture);
+    
+    public override bool Equals(Operand other)
+    {
+        return other is ImmediateOperand op && op.Value == Value;
+    }
 }

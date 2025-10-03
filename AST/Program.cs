@@ -16,6 +16,7 @@ internal class Program : IResolutionScope
         Defines = defines;
         Symtable = symtable;
         Symtable.Add(new Sleep());
+        Symtable.Add(new Status());
         Symtable.Add(new Load());
         Symtable.Add(new LoadByReference());
         Symtable.Add(new LoadBatch());
@@ -26,23 +27,23 @@ internal class Program : IResolutionScope
         Symtable.Add(new SaveBatch());
         Symtable.Add(new SaveBatchNamed());
         Symtable.Add(new SaveSlotBatch());
-        Symtable.Add(new BasicArgless("rand","rand"));
-        Symtable.Add(new BasicUnary("abs","abs"));
-        Symtable.Add(new BasicUnary("ceil","ceil"));
-        Symtable.Add(new BasicUnary("exp","exp"));
-        Symtable.Add(new BasicUnary("floor","floor"));
-        Symtable.Add(new BasicUnary("log","log"));
-        Symtable.Add(new BasicUnary("round","round"));
-        Symtable.Add(new BasicUnary("sqrt","sqrt"));
-        Symtable.Add(new BasicUnary("trunc","trunc"));
-        Symtable.Add(new BasicUnary("sin","sin"));
-        Symtable.Add(new BasicUnary("cos","cos"));
-        Symtable.Add(new BasicUnary("asin","asin"));
-        Symtable.Add(new BasicUnary("acos","acos"));
-        Symtable.Add(new BasicUnary("atan","atan"));
-        Symtable.Add(new BasicUnary("tan","tan"));
-        Symtable.Add(new BasicBinary("min","min"));
-        Symtable.Add(new BasicBinary("max","max"));
+        Symtable.Add(new BasicArgless("rand", "rand"));
+        Symtable.Add(new BasicUnary("abs", "abs"));
+        Symtable.Add(new BasicUnary("ceil", "ceil"));
+        Symtable.Add(new BasicUnary("exp", "exp"));
+        Symtable.Add(new BasicUnary("floor", "floor"));
+        Symtable.Add(new BasicUnary("log", "log"));
+        Symtable.Add(new BasicUnary("round", "round"));
+        Symtable.Add(new BasicUnary("sqrt", "sqrt"));
+        Symtable.Add(new BasicUnary("trunc", "trunc"));
+        Symtable.Add(new BasicUnary("sin", "sin"));
+        Symtable.Add(new BasicUnary("cos", "cos"));
+        Symtable.Add(new BasicUnary("asin", "asin"));
+        Symtable.Add(new BasicUnary("acos", "acos"));
+        Symtable.Add(new BasicUnary("atan", "atan"));
+        Symtable.Add(new BasicUnary("tan", "tan"));
+        Symtable.Add(new BasicBinary("min", "min"));
+        Symtable.Add(new BasicBinary("max", "max"));
 
         Symtable.AddRange(body.OfType<FunctionDeclaration>());
         Symtable.AddRange(defines);
@@ -122,47 +123,27 @@ internal class Program : IResolutionScope
             lines.AddRange(fn.Emit(fn));
 
         var linesBeforeOptimization = lines.Count;
+        var optimizations = new Optimization[]
+        {
+            new JoinLabels(),
+            new JoinMovesViaAcc(),
+            new JoinMovePush(),
+            new JoinCompareJump(),
+            new RemoveUnreachable(),
+            new RemoveJumpNext()
+        };
         //Optimization
         for (var i = 0; i < lines.Count - 1; i++)
         {
-            //Join consecutive labels
-            if (lines[i] is Label l1 && lines[i + 1] is Label l2)
+            foreach (var optimization in optimizations)
             {
-                l2.Name = l1.Name;
-                lines.RemoveAt(i + 1);
-                i--;
-            }
-
-            //Simplify move r0 x; move rN r0 constructions
-            if (lines[i] is Instruction i1 && lines[i + 1] is Instruction i2 && i1.OpCode == "move" && i2.OpCode == "move" &&
-                ((i1.Operands[0] == Acc0Operand.Instance && i2.Operands[1] == Acc0Operand.Instance) || (i1.Operands[0] == Acc1Operand.Instance && i2.Operands[1] == Acc1Operand.Instance)))
-            {
-                i1.Operands[0] = i2.Operands[0];
-                lines.RemoveAt(i + 1);
-                i--;
-            }
-
-            //Simplify move r0 x; push r0 constructions
-            if (lines[i] is Instruction i11 && lines[i + 1] is Instruction i12 && i11.OpCode == "move" && i12.OpCode == "push" &&
-                ((i11.Operands[0] == Acc0Operand.Instance && i12.Operands[0] == Acc0Operand.Instance) || (i11.Operands[0] == Acc1Operand.Instance && i12.Operands[0] == Acc1Operand.Instance)))
-            {
-                i12.Operands[0] = i11.Operands[1];
-                lines.RemoveAt(i);
-                i--;
-            }
-
-            //Remove all instructions between unconditional jump and label
-            if (lines[i] is Instruction i21 && lines[i + 1] is Instruction i22 && i21.OpCode == "j")
-            {
-                lines.RemoveAt(i + 1);
-                i--;
-            }
-
-            //Remove unconditional jump to next line
-            if (lines[i] is Instruction i31 && lines[i + 1] is Label i32 && i31.OpCode == "j" && i31.Operands[0] is LabelOperand lo31 && lo31.Target.Name == i32.Name)
-            {
-                lines.RemoveAt(i);
-                i--;
+                if (optimization.Lookahead < lines.Count - i && optimization.Applicable(lines.Skip(i).Take(optimization.Lookahead)))
+                {
+                    var optimized = optimization.Optimize(lines.Skip(i).Take(optimization.Lookahead)).ToArray();
+                    lines.RemoveRange(i, optimization.Lookahead);
+                    lines.InsertRange(i, optimized);
+                    i -= optimization.Lookahead - optimized.Length;
+                }
             }
         }
 

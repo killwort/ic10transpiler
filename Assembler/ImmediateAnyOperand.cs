@@ -9,4 +9,9 @@ internal class ImmediateAnyOperand : Operand
 
     public string Value;
     public override string ToString() => Value;
+
+    public override bool Equals(Operand other)
+    {
+        return other is ImmediateAnyOperand op && op.Value == Value;
+    }
 }

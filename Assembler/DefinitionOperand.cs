@@ -9,4 +9,9 @@ internal class DefinitionOperand : Operand
 
     public string Name;
     public override string ToString() => Name;
+    
+    public override bool Equals(Operand other)
+    {
+        return other is DefinitionOperand op &&  op.Name == Name;
+    }
 }

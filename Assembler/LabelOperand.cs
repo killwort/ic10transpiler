@@ -10,4 +10,9 @@ internal class LabelOperand : Operand
     }
 
     public override string ToString() => Target.Name;
+    
+    public override bool Equals(Operand other)
+    {
+        return other is LabelOperand op && op.Target.Name == Target.Name;
+    }
 }

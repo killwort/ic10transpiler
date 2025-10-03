@@ -10,4 +10,9 @@ internal class Acc1Operand : Operand
     }
 
     public override string ToString() => "r1";
+    
+    public override bool Equals(Operand other)
+    {
+        return other is Acc0Operand;
+    }
 }

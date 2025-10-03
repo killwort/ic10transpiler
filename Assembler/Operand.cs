@@ -1,5 +1,8 @@
-﻿namespace Ic10Transpiler.Assembler;
+﻿using System;
 
-internal abstract class Operand
+namespace Ic10Transpiler.Assembler;
+
+internal abstract class Operand:IEquatable<Operand>
 {
+    public abstract bool Equals(Operand other);
 }

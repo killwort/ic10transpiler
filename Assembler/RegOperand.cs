@@ -14,4 +14,9 @@ internal class RegOperand : Operand
 
     public int RegNumber;
     public override string ToString() => "r" + RegNumber;
+    
+    public override bool Equals(Operand other)
+    {
+        return other is RegOperand op && op.RegNumber == RegNumber;
+    }
 }

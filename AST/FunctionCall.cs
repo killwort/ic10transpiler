@@ -24,7 +24,7 @@ internal class FunctionCall : Expr
     {
         var targetFn = scope.Root.LookupSymbol(Name) as IFunction;
         if (targetFn == null)
-            yield return new Error(Line, Column, $"Call of undefined function {Name}", ErrorType.Semantic);
+            yield return new Error(Line, Column, $"Call of undefined function {Name.Name}", ErrorType.Semantic);
         else if (targetFn.Arguments.Count() != Arguments.Count)
             yield return new Error(Line, Column, $"Incorrect number of arguments passed ({Arguments.Count}) to function {targetFn.Name} with {targetFn.Arguments.Count()} arguments", ErrorType.Semantic);
         if (targetFn is BuiltinFunction targetBFn)
