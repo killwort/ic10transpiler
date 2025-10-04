@@ -30,6 +30,8 @@ stringDelim	=	"\"".
 stringDelimBq	=	"'".
 stringChar	=	ANY-stringDelim-stringDelimBq-esc.
 minus = "-".
+
+
 TOKENS
 ident		=	(letter){letter|digit}.
 number		=	({digit}"."digit {digit})|(digit {digit}).
@@ -41,6 +43,9 @@ internalAdditiveOp    = "+".
 compoundAssignmentOp  = "+=" | "-=" | "*=" | "/=" | "%=".
 logicalOp = "<=" | ">=" | "<" | ">" | "==" | "!=". 
 logicalBinaryOp = "&&" | "||".
+
+COMMENTS FROM "//" TO "\n"
+COMMENTS FROM "/*" TO "*/"
 IGNORE 
 '\r' + '\n' + '\t' + ' '
 PRODUCTIONS

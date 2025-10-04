@@ -132,6 +132,47 @@ internal class Scanner {
 
 
 
+	bool Comment0() {
+		int level = 1, pos0 = pos, line0 = line, col0 = col, charPos0 = charPos;
+		NextCh();
+		if (ch == '*') {
+			NextCh();
+			for(;;) {
+				if (ch == '*') {
+					NextCh();
+					if (ch == '/') {
+						level--;
+						if (level == 0) { oldEols = line - line0; NextCh(); return true; }
+						NextCh();
+					}
+				} else if (ch == Buffer.EOF) return false;
+				else NextCh();
+			}
+		} else {
+			buffer.Pos = pos0; NextCh(); line = line0; col = col0; charPos = charPos0;
+		}
+		return false;
+	}
+
+	bool Comment1() {
+		int level = 1, pos0 = pos, line0 = line, col0 = col, charPos0 = charPos;
+		NextCh();
+		if (ch == '/') {
+			NextCh();
+			for(;;) {
+				if (ch == 10) {
+					level--;
+					if (level == 0) { oldEols = line - line0; NextCh(); return true; }
+					NextCh();
+				} else if (ch == Buffer.EOF) return false;
+				else NextCh();
+			}
+		} else {
+			buffer.Pos = pos0; NextCh(); line = line0; col = col0; charPos = charPos0;
+		}
+		return false;
+	}
+
 
 	void CheckLiteral() {
 		switch (t.val) {
@@ -154,7 +195,7 @@ internal class Scanner {
 		while (ch == ' ' ||
 			ch >= 9 && ch <= 10 || ch == 13 || ch == ' '
 		) NextCh();
-
+		if (ch == '/' && Comment0() ||ch == '/' && Comment1()) return NextToken();
 		int recKind = noSym;
 		int recEnd = pos;
 		t = new Token();
